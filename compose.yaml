@@ -1,0 +1,39 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      SITE_URL: https://${DOMAIN:?Set DOMAIN in .env}
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATA_DIR: /app/data
+    volumes:
+      - athena_data:/app/data
+    expose:
+      - "3000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+volumes:
+  athena_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,2 @@
+const form=document.querySelector('#login-form');
+form?.addEventListener('submit',async e=>{e.preventDefault();const button=form.querySelector('button'),notice=document.querySelector('#notice');button.disabled=true;notice.textContent='Signing in…';try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});const data=await r.json();if(!r.ok)throw Error(data.error);location.assign('/studio')}catch(e){notice.textContent=e.message;button.disabled=false}});

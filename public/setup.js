@@ -1,0 +1,4 @@
+const form=document.querySelector('#setup-form');
+const key=location.hash.slice(1);history.replaceState(null,'','/setup');
+if(/^[a-f0-9]{64}$/.test(key)){form.elements.token.value=key;form.elements.token.closest('label').hidden=true;}
+form.addEventListener('submit',async e=>{e.preventDefault();const button=form.querySelector('button'),notice=document.querySelector('#notice');const data=Object.fromEntries(new FormData(form));if(data.password!==data.confirm){notice.textContent='Passwords do not match.';return;}delete data.confirm;button.disabled=true;notice.textContent='Creating your account…';try{const r=await fetch('/api/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await r.json();if(!r.ok)throw Error(result.error);location.assign('/login');}catch(e){notice.textContent=e.message;button.disabled=false;}});

@@ -1,0 +1,6 @@
+{
+  "name": "athena-independent", "version": "1.0.0", "private": true, "type": "module",
+  "description": "ATHENA independent news website and editorial studio",
+  "engines": { "node": ">=24.19.0 <25" },
+  "scripts": { "start": "node --env-file-if-exists=.env server.mjs", "setup": "node --env-file-if-exists=.env scripts/admin.mjs", "test": "node --test test/*.test.mjs" }
+}
