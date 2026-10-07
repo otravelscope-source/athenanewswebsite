@@ -40,7 +40,7 @@ export async function createApp(options={}){
  let path='';try{
  const url=new URL(req.url,siteUrl);path=url.pathname;
  if(path==='/health'&&req.method==='GET'){db.prepare('SELECT 1').get();return json(res,200,{status:'ok'})}
- if(req.method==='GET'&&(path==='/style.css'||path==='/login.js'||path==='/setup.js'||path==='/studio.js'||path==='/favicon.svg'||/^\/images\/[a-zA-Z0-9_.-]+$/.test(path)||/^\/uploads\/[a-f0-9-]+\.(jpg|png|webp)$/.test(path))){
+ if(req.method==='GET'&&(path==='/style.css'||path==='/login.js'||path==='/setup.js'||path==='/studio.js'||path==='/reader.js'||path==='/article-format.js'||path==='/favicon.svg'||/^\/images\/[a-zA-Z0-9_.-]+$/.test(path)||/^\/uploads\/[a-f0-9-]+\.(jpg|png|webp)$/.test(path))){
  const file=path.startsWith('/uploads/')?join(dataDir,path.slice(1)):join(root,'public',path.slice(1));const mime={'.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp'}[extname(file)];try{return send(res,200,await readFile(file),mime,{'Cache-Control':'public, max-age=3600'})}catch(e){if(e.code==='ENOENT')throw new HttpError(404,'Image or file not found.');throw e}
  }
  if(path==='/'&&req.method==='GET'){const section=categories.includes(url.searchParams.get('section'))?url.searchParams.get('section'):'All stories';return send(res,200,home(published(section==='All stories'?null:section),section,siteUrl))}
