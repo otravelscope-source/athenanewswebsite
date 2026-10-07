@@ -1,0 +1,4 @@
+export const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export function safeImage(s){if(/^\/(images|uploads)\/[a-zA-Z0-9_.-]+$/.test(s))return true;try{const u=new URL(s);return u.protocol==='https:'&&!u.username&&!u.password}catch{return false}}
+export const inline=s=>String(s).split(/(https?:\/\/[^\s]+)/g).map(t=>/^https?:\/\//.test(t)?`<a href="${esc(t)}" rel="noreferrer" target="_blank">${esc(t)}</a>`:esc(t)).join('');
+export function bodyHTML(body){return String(body).split(/\n\s*\n/).map(p=>{const m=p.match(/^!\[([^\]\n]*)\]\(([^\s]+)\)(?:\n([\s\S]*))?$/);if(m&&safeImage(m[2]))return `<figure class="inline-image"><img src="${esc(m[2])}" alt="${esc(m[1])}" loading="lazy"><figcaption>${inline(m[3]||m[1])}</figcaption></figure>`;return p.startsWith('## ')?`<h2>${esc(p.slice(3))}</h2>`:`<p>${inline(p)}</p>`}).join('')}
