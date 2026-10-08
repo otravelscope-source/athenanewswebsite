@@ -1,3 +1,4 @@
+import {createMembers} from './members.mjs';
 import http from 'node:http';
 import {readFile,writeFile,rename,unlink} from 'node:fs/promises';
 import {resolve,join,extname,dirname} from 'node:path';
@@ -33,19 +34,21 @@ export async function createApp(options={}){
  function json(res,status,obj,headers={}){send(res,status,JSON.stringify(obj),'application/json; charset=utf-8',headers)}
  function authCookie(raw,maxAge){return `${cookieName}=${raw}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure?'; Secure':''}`}
  function published(section){return section?db.prepare("SELECT * FROM articles WHERE status='published' AND category=? ORDER BY published_at DESC,updated DESC").all(section):db.prepare("SELECT * FROM articles WHERE status='published' ORDER BY published_at DESC,updated DESC").all()}
+ const handleMembers=await createMembers({db,siteUrl,production,send,json,readJSON:jsonBody,originCheck});
  const server=http.createServer(async(req,res)=>{
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');res.setHeader('X-Frame-Options','DENY');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');res.setHeader('Cache-Control','no-store');
  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' https:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
  if(secure)res.setHeader('Strict-Transport-Security','max-age=31536000');
  let path='';try{
  const url=new URL(req.url,siteUrl);path=url.pathname;
+ if(await handleMembers(req,res,path))return;
  if(path==='/health'&&req.method==='GET'){db.prepare('SELECT 1').get();return json(res,200,{status:'ok'})}
- if(req.method==='GET'&&(path==='/style.css'||path==='/login.js'||path==='/setup.js'||path==='/studio.js'||path==='/reader.js'||path==='/article-format.js'||path==='/favicon.svg'||/^\/images\/[a-zA-Z0-9_.-]+$/.test(path)||/^\/uploads\/[a-f0-9-]+\.(jpg|png|webp)$/.test(path))){
+ if(req.method==='GET'&&(path==='/style.css'||path==='/login.js'||path==='/setup.js'||path==='/studio.js'||path==='/members.js'||path==='/reader.js'||path==='/article-format.js'||path==='/favicon.svg'||/^\/images\/[a-zA-Z0-9_.-]+$/.test(path)||/^\/uploads\/[a-f0-9-]+\.(jpg|png|webp)$/.test(path))){
  const file=path.startsWith('/uploads/')?join(dataDir,path.slice(1)):join(root,'public',path.slice(1));const mime={'.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp'}[extname(file)];try{return send(res,200,await readFile(file),mime,{'Cache-Control':'public, max-age=3600'})}catch(e){if(e.code==='ENOENT')throw new HttpError(404,'Image or file not found.');throw e}
  }
  if(path==='/'&&req.method==='GET'){const section=categories.includes(url.searchParams.get('section'))?url.searchParams.get('section'):'All stories';return send(res,200,home(published(section==='All stories'?null:section),section,siteUrl))}
  if(path.startsWith('/article/')&&req.method==='GET'){const id=decodeURIComponent(path.slice(9));const a=db.prepare("SELECT * FROM articles WHERE id=? AND status='published'").get(id);if(!a)throw new HttpError(404,'This story is not available.');return send(res,200,articlePage(a,siteUrl))}
- if(path==='/robots.txt'&&req.method==='GET')return send(res,200,`User-agent: *\nAllow: /\nDisallow: /studio\nDisallow: /login\nDisallow: /api/\nSitemap: ${siteUrl}/sitemap.xml\n`,'text/plain; charset=utf-8');
+ if(path==='/robots.txt'&&req.method==='GET')return send(res,200,`User-agent: *\nAllow: /\nDisallow: /studio\nDisallow: /login\nDisallow: /account\nDisallow: /signin\nDisallow: /recover\nDisallow: /api/\nSitemap: ${siteUrl}/sitemap.xml\n`,'text/plain; charset=utf-8');
  if(path==='/sitemap.xml'&&req.method==='GET')return send(res,200,`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${esc(siteUrl)}/</loc></url>${published().map(a=>`<url><loc>${esc(siteUrl)}/article/${encodeURIComponent(a.id)}</loc><lastmod>${esc(a.updated)}</lastmod></url>`).join('')}</urlset>`,'application/xml; charset=utf-8');
  if(path==='/setup'&&req.method==='GET'){
  if(stmt.admin.get()||!setupEnabled())throw new HttpError(404,'Setup is not available.');
