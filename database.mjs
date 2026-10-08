@@ -1,3 +1,4 @@
+import {enrichValkyriesImages} from './article-image-enrichment.mjs';
 import {importArticles} from './article-import.mjs';
 import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync,readFileSync} from 'node:fs';
@@ -18,6 +19,7 @@ export function openDatabase(dataDir){
   db.exec('BEGIN');try{for(const a of seeds)insert.run(a.id,a.title,a.subtitle,a.category,a.author,a.body,a.image,a.credit,a.status,a.updated,a.status==='published'?a.updated:null);db.prepare("INSERT INTO metadata VALUES ('seeded','1')").run();db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}
  }
  importArticles(db);
+ enrichValkyriesImages(db);
  return db;
 }
 export function articleJSON(a){return {id:a.id,title:a.title,subtitle:a.subtitle,category:a.category,author:a.author,body:a.body,image:a.image,credit:a.credit,status:a.status,updated:a.updated,publishedAt:a.published_at,revision:a.revision}}
