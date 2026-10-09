@@ -13,3 +13,7 @@ if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){stat
  for(const control of [speed,voice])control.addEventListener('change',()=>{if(mode==='idle')return;const paused=mode==='paused';generation++;synth.cancel();synth.resume();mode='playing';speak();if(paused){mode='paused';synth.pause();status.textContent='Paused.'}controls()});
  window.addEventListener('pagehide',reset);synth.addEventListener('voiceschanged',loadVoices);loadVoices();status.textContent='Ready to listen.';controls();
 }
+
+const copyStory=document.querySelector('#copy-story-link');
+if(copyStory)copyStory.addEventListener('click',async()=>{const status=document.querySelector('#share-status');try{await navigator.clipboard.writeText(copyStory.dataset.url);status.textContent='Link copied.'}catch{status.textContent='Copy this address: '+copyStory.dataset.url}});
+
